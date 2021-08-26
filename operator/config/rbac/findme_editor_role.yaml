@@ -1,0 +1,24 @@
+# permissions for end users to edit findmes.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: findme-editor-role
+rules:
+- apiGroups:
+  - application.caseywylie.io
+  resources:
+  - findmes
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - application.caseywylie.io
+  resources:
+  - findmes/status
+  verbs:
+  - get
