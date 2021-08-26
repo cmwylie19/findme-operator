@@ -1,0 +1,50 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  annotations:
+    alm-examples: '[]'
+    capabilities: Basic Install
+  name: operator.v0.0.0
+  namespace: placeholder
+spec:
+  apiservicedefinitions: {}
+  customresourcedefinitions:
+    owned:
+    - description: Findme is the Schema for the findmes API
+      displayName: Findme
+      kind: Findme
+      name: findmes.application.caseywylie.io
+      version: v1alpha1
+  description: Operator for Findme application
+  displayName: Findme
+  icon:
+  - base64data: ""
+    mediatype: ""
+  install:
+    spec:
+      deployments: null
+    strategy: ""
+  installModes:
+  - supported: false
+    type: OwnNamespace
+  - supported: false
+    type: SingleNamespace
+  - supported: false
+    type: MultiNamespace
+  - supported: true
+    type: AllNamespaces
+  keywords:
+  - operator-sdk
+  - golang
+  - react
+  links:
+  - name: Operator
+    url: https://operator.domain
+  maintainers:
+  - email: cmwylie19@gmail.com
+    name: Casey
+  maturity: alpha
+  provider:
+    name: Casey Wylie
+    url: https://caseywylie.io
+  version: 0.0.0
