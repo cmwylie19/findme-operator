@@ -1,3 +1,37 @@
+# Minikube Environment
+```
+minikube start --cpus=4 --memory=8192
+```
+
+# Install Istio
+```
+# Create istio-system namespace
+kubectl create ns istio-system
+
+# Label default namespace to allow sidecars
+kubectl label ns default istio-injection=enabled
+
+# Verify Label
+kubectl get ns default -ojsonpath='{.metadata.labels.istio-injection}'  
+
+# Install Istio base chart which contains cluster-wide resources use by the istio control plane
+helm install istio-base helm-charts/istio -n istio-system
+
+# Verify resource were applied to the cluster
+kubectl get crd | grep istio.io
+
+# Install Istio discovery chart which deploys `istiod` service
+helm install istiod helm-charts/istiod -n istio-system
+
+# Verify installation
+kubectl get svc istiod -n istio-system
+
+# Install Istio ingress gateway
+helm install istio-ingress helm-charts/istio-ingress -n istio-system 
+
+# Verify installation
+kubectl get svc -n istio-system istio-ingressgateway
+```
 # OLM
 ```
 operator-sdk olm install/uninstall
