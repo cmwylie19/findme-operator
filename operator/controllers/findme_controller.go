@@ -47,6 +47,7 @@ type FindmeReconciler struct {
 //+kubebuilder:rbac:groups=application.caseywylie.io,resources=findmes/finalizers,verbs=update
 //+kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;watch
+//+kubebuilder:rbac:groups=core,resources=services,verbs=get;list;watch;create;
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -59,6 +60,9 @@ type FindmeReconciler struct {
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.9.2/pkg/reconcile
 func (r *FindmeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := ctrllog.FromContext(ctx)
+
+	// Log out
+	log.Info("HITTING THE SERVICE")
 
 	// Fetch the Findme instance
 	findme := &applicationv1alpha1.Findme{}
@@ -92,6 +96,27 @@ func (r *FindmeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{Requeue: true}, nil
 	} else if err != nil {
 		log.Error(err, "Failed to get Deployment")
+		return ctrl.Result{}, err
+	}
+
+	// Check if the service already exists, if not create a new one
+	service := &corev1.Service{}
+	err = r.Get(ctx, types.NamespacedName{Name: findme.Name, Namespace: findme.Namespace}, service)
+
+	if err != nil && errors.IsNotFound(err) {
+		// Define a new service
+
+		svc := r.serviceForFindme(findme)
+		log.Info("Creating a new Service", "Service.Namespace", svc.Namespace, "Service.Name", svc.Name)
+		err = r.Create(ctx, svc)
+		if err != nil {
+			log.Error(err, "Failed to create a new Service", "Service.Namespace", svc.Namespace, "Service.Name", svc.Name)
+			return ctrl.Result{}, err
+		}
+		//Service created successfully - return and requeue
+		return ctrl.Result{Requeue: true}, nil
+	} else if err != nil {
+		log.Error(err, "failed to get Service")
 		return ctrl.Result{}, err
 	}
 
@@ -136,7 +161,42 @@ func (r *FindmeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	return ctrl.Result{}, nil
 }
 
-// deploymentForMemcached returns a memcached Deployment object
+// serviceForFindme returns a findme Service object
+func (r *FindmeReconciler) serviceForFindme(m *applicationv1alpha1.Findme) *corev1.Service {
+	//ls := labelsForFindme(m.Name)
+
+	service := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      m.Name,
+			Namespace: m.Namespace,
+			Labels: map[string]string{
+				"version":                "v1",
+				"app.kubernetes.io/name": "findme",
+				"app":                    "findme",
+			},
+		},
+		// ObjectMeta: metav1.ObjectMeta{
+		// 	Name:      m.Name,
+		// 	Namespace: m.Namespace,
+		// 	Labels:    ls,
+		// },
+		Spec: corev1.ServiceSpec{
+			Ports: []corev1.ServicePort{{
+				Name: "http",
+				Port: 80,
+			}},
+			Selector: map[string]string{
+				"app": "findme",
+			},
+		},
+	}
+	// Set Findme instance as the owner and controller
+	ctrl.SetControllerReference(m, service, r.Scheme)
+	return service
+
+}
+
+// deploymentForMemcached returns a findme Deployment object
 func (r *FindmeReconciler) deploymentForFindme(m *applicationv1alpha1.Findme) *appsv1.Deployment {
 	ls := labelsForFindme(m.Name)
 	replicas := m.Spec.Size
@@ -171,7 +231,7 @@ func (r *FindmeReconciler) deploymentForFindme(m *applicationv1alpha1.Findme) *a
 			},
 		},
 	}
-	// Set Memcached instance as the owner and controller
+	// Set Findme instance as the owner and controller
 	ctrl.SetControllerReference(m, deployment, r.Scheme)
 	return deployment
 }
@@ -195,6 +255,7 @@ func getPodNames(pods []corev1.Pod) []string {
 func (r *FindmeReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&applicationv1alpha1.Findme{}).
+		Owns(&corev1.Service{}).
 		Owns(&appsv1.Deployment{}).
 		WithOptions(controller.Options{MaxConcurrentReconciles: 2}).
 		Complete(r)
