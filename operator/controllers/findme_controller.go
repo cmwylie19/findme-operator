@@ -48,6 +48,7 @@ type FindmeReconciler struct {
 //+kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;watch
 //+kubebuilder:rbac:groups=core,resources=services,verbs=get;list;watch;create;
+//+kubebuilder:rbac:groups=core,resources=serviceaccounts,verbs=get;list;watch;create;update;patch;delete
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -77,6 +78,26 @@ func (r *FindmeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		}
 		// Error reading the object - requeue the request.
 		log.Error(err, "Failed to get Findme")
+		return ctrl.Result{}, err
+	}
+
+	// Check if the serviceAccount already exists, if not create a new one
+	serviceAccount := &corev1.ServiceAccount{}
+	err = r.Get(ctx, types.NamespacedName{Name: findme.Name, Namespace: findme.Namespace}, serviceAccount)
+
+	if err != nil && errors.IsNotFound(err) {
+		// Define a new serviceAccount
+		sa := r.serviceAccountForFindme(findme)
+		log.Info("Creating a new Service Account", "Service.Namespace", sa.Namespace, "Service.Name", sa.Name)
+		err = r.Create(ctx, sa)
+		if err != nil {
+			log.Error(err, "Failed to create a new Service Account", "Service.Namespace", sa.Namespace, "Service.Name", sa.Name)
+			return ctrl.Result{}, err
+		}
+		//ServiceAccount created successfully - return and requeue
+		return ctrl.Result{Requeue: true}, nil
+	} else if err != nil {
+		log.Error(err, "failed to get Service Account")
 		return ctrl.Result{}, err
 	}
 
@@ -161,6 +182,20 @@ func (r *FindmeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	return ctrl.Result{}, nil
 }
 
+// serviceAccountForFindme returns a findme ServiceAccount object
+func (r *FindmeReconciler) serviceAccountForFindme(m *applicationv1alpha1.Findme) *corev1.ServiceAccount {
+	serviceAccount := &corev1.ServiceAccount{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      m.Name,
+			Namespace: m.Namespace,
+		},
+	}
+
+	// set Findme instance as the owner and controller
+	ctrl.SetControllerReference(m, serviceAccount, r.Scheme)
+	return serviceAccount
+}
+
 // serviceForFindme returns a findme Service object
 func (r *FindmeReconciler) serviceForFindme(m *applicationv1alpha1.Findme) *corev1.Service {
 	//ls := labelsForFindme(m.Name)
@@ -216,7 +251,7 @@ func (r *FindmeReconciler) deploymentForFindme(m *applicationv1alpha1.Findme) *a
 					Labels: ls,
 				},
 				Spec: corev1.PodSpec{
-					ServiceAccountName: "findme",
+					ServiceAccountName: m.Name,
 					Containers: []corev1.Container{{
 						Image: "docker.io/cmwylie19/find-me:latest",
 						Name:  "findme",
@@ -256,6 +291,7 @@ func (r *FindmeReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&applicationv1alpha1.Findme{}).
 		Owns(&corev1.Service{}).
+		Owns(&corev1.ServiceAccount{}).
 		Owns(&appsv1.Deployment{}).
 		WithOptions(controller.Options{MaxConcurrentReconciles: 2}).
 		Complete(r)
