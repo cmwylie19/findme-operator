@@ -1,6 +1,6 @@
 apiVersion: application.caseywylie.io/v1alpha1
 kind: Findme
 metadata:
-  name: findme-resource
+  name: findme-app
 spec: 
   size: 1
