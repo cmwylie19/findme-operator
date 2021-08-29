@@ -210,11 +210,6 @@ func (r *FindmeReconciler) serviceForFindme(m *applicationv1alpha1.Findme) *core
 				"app":                    "findme",
 			},
 		},
-		// ObjectMeta: metav1.ObjectMeta{
-		// 	Name:      m.Name,
-		// 	Namespace: m.Namespace,
-		// 	Labels:    ls,
-		// },
 		Spec: corev1.ServiceSpec{
 			Ports: []corev1.ServicePort{{
 				Name: "http",
@@ -228,7 +223,6 @@ func (r *FindmeReconciler) serviceForFindme(m *applicationv1alpha1.Findme) *core
 	// Set Findme instance as the owner and controller
 	ctrl.SetControllerReference(m, service, r.Scheme)
 	return service
-
 }
 
 // deploymentForMemcached returns a findme Deployment object
