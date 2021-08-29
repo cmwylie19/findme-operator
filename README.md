@@ -1,3 +1,4 @@
+
 # Minikube Environment
 ```
 minikube start --cpus=4 --memory=8192
@@ -32,6 +33,8 @@ helm install istio-ingress helm-charts/istio-ingress -n istio-system
 # Verify installation
 kubectl get svc -n istio-system istio-ingressgateway
 ```
+
+
 # OLM
 ```
 operator-sdk olm install/uninstall
@@ -41,6 +44,21 @@ make bundle bundle-build bundle-push
 operator-sdk run bundle docker.io/cmwylie19/findme-operator-bundle:v0.0.1 
 
 operator-sdk run bundle-upgrade docker.io/cmwylie19/findme-operator-bundle:v0.0.1 
+
+# Verify CatalogSource
+kubectl get catalogsource operator-catalog
+
+# Verify OperatorGroup
+kubectl get og operator-sdk-og
+
+# Create subscription
+k get subscription operator-v0-0-1-sub -oyaml
+
+# Verify clusterserviceversion
+kubectl get clusterserviceversion -A 
+
+# Verify operator exists
+kubectl get operator operator.default
 ```
 
 k logs deploy/operator-controller-manager -n operator-system -c manager 
