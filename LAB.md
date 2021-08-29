@@ -8,7 +8,7 @@ __The Findme operator deploys an application that uses HTML5 Geolocation to Disp
 
 
 ### About
-The findme operator controls Deployments, Services, and Service Accounts. The operator will sync the reasons based on the Findme CRD.
+The findme operator controls Deployments, Services, and Service Accounts. We will deploy the operator into the a loca
 
 
 
