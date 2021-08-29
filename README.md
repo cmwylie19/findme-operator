@@ -1,10 +1,28 @@
 
-# Minikube Environment
+# Findme Operator POC
+_During this lab, you will create a local cluster with minikube, install Istio, deploy the operator resources, and then deploy the application the application through CRDs._
+
+**Steps**
+- [Architectural Overview](#architectural-overview)
+- [Create Minikube Cluster](#minikube-environment)
+- [Install Istio](#install-istio)
+- [Deploy Operator Resources](#deploy-operator-resources)
+- [Deploy Findme](#deploy-findme)
+- [Create a LoadBalancer for Istio-ingressgateway service](#create-a-loadbalancer)
+- [Interact with Applications](#interact-with-apps)
+
+## Architectural Overview
+Overview of the target endstate. We deploy the findme application and the httpbin application. The sole purpose of the httpbin application is for internal testing from within the cluster. The requests come in through the istio-ingress gateway and are routed accordingly via the configuration specified in the `default` virtual service.
+![architecture](architecture.png)
+
+## Minikube Environment
+Create a single-node cluster using minikube.
 ```
 minikube start --cpus=4 --memory=8192
 ```
 
-# Install Istio
+## Install Istio
+Install a slim version of istio to control cluster level routing. We will install the CRDs for Istio, the control plane, istiod, and then finally the istio-ingress gateway.
 ```
 # Create istio-system namespace
 kubectl create ns istio-system
@@ -34,121 +52,41 @@ helm install istio-ingress helm-charts/istio-ingress -n istio-system
 kubectl get svc -n istio-system istio-ingressgateway
 ```
 
-
-# OLM
+## Deploy Operator Resources
+We will now install the resources necessary to support the Findme operator.
 ```
-operator-sdk olm install/uninstall
-
-make bundle bundle-build bundle-push 
-
-operator-sdk run bundle docker.io/cmwylie19/findme-operator-bundle:v0.0.1 
-
-operator-sdk run bundle-upgrade docker.io/cmwylie19/findme-operator-bundle:v0.0.1 
-
-# Verify CatalogSource
-kubectl get catalogsource operator-catalog
-
-# Verify OperatorGroup
-kubectl get og operator-sdk-og
-
-# Create subscription
-k get subscription operator-v0-0-1-sub -oyaml
-
-# Verify clusterserviceversion
-kubectl get clusterserviceversion -A 
-
-# Verify operator exists
-kubectl get operator operator.default
+helm install findme helm-charts/findme 
 ```
 
-k logs deploy/operator-controller-manager -n operator-system -c manager 
-
-k logs deploy/operator-controller-manager -n operator-system -c manager | grep controller-runtime.manager.controller.findme
-
-make docker-build docker-push
-
-
-https://github.com/spotahome/redis-operator/blob/master/operator/redisfailover/service/generator_test.go
-
-### RBAC
-/config/rbac/role.yaml
-//+kubebuilder:rbac:groups=core,resources=services,verbs=get;list;watch;create;
-
-### Istio
+## Deploy Findme
+This is where we deploy the application from a custom resource definition
 ```
-istioctl install --set profile=demo -y
-kubectl label namespace default istio-injection=enabled
-
-```
-apiVersion: networking.istio.io/v1alpha3
-kind: Gateway
+kubectl apply -f -<<EOF
+apiVersion: application.caseywylie.io/v1alpha1
+kind: Findme
 metadata:
-  name: ingress-gateway
-spec:
-  selector:
-    istio: ingressgateway # use istio default controller
-  servers:
-  - port:
-      number: 80
-      name: http
-      protocol: HTTP
-    hosts:
-    - "*"
----
-apiVersion: networking.istio.io/v1alpha3
-kind: VirtualService
-metadata:
-  name: main
-spec:
-  hosts:
-  - "*"
-  gateways:
-  - ingress-gateway
-  http:
-  - match:
-    - uri:
-        prefix: /
-    route:
-    - destination:
-        host: findme-resource
-        port:
-          number: 80
-```
-
-```
-istioctl install --set profile=demo -y; k apply -f samples/addons; k apply -f samples/addonsl k label ns istio-system istio-injection=enabled;k apply -f 
-heredoc> apiVersion: networking.istio.io/v1alpha3
-kind: Gateway
-metadata:
-  name: ingress-gateway
-spec:
-  selector:
-    istio: ingressgateway # use istio default controller
-  servers:
-  - port:
-      number: 80
-      name: http
-      protocol: HTTP
-    hosts:
-    - "*"
----
-apiVersion: networking.istio.io/v1alpha3
-kind: VirtualService
-metadata:
-  name: main
-spec:
-  hosts:
-  - "*"
-  gateways:
-  - ingress-gateway
-  http:
-  - match:
-    - uri:
-        prefix: /
-    route:
-    - destination:
-        host: findme-resource
-        port:
-          number: 80
+  name: findme-app
+spec: 
+  size: 1
 EOF
+```
+
+## Create a loadbalancer
+Istio ingress gateway needs a dedicated IP address, you can expose it as type `NodePort` or `LoadBalancer`, with the default being `LoadBalancer`. In order to a serve the `svc/istio-ingressgateway` as LoadBalancer we need utlize `minikube tunnel` on order to expose the service as a `LoadBalancer`.
+
+```
+minikube tunnel
+```
+
+## Interact with Apps
+While minikube tunnel is running in another terminal.   
+Call the httpbin service from the terminal.   
+```
+curl http://localhost/get
+```
+
+Open Findme app in the browser
+open `localhost` in your browser.
+```
+chromium localhost
 ```
