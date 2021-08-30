@@ -3,6 +3,7 @@
 _During this lab, you will create a local cluster with minikube, install Istio, deploy the operator resources, and then deploy the application the application through CRDs._
 
 [Google Slides Preso](https://docs.google.com/presentation/d/1qU_kT3EO20aDPwlDGaoStWTXPQHz-W3T5YUtqb2vdAU/edit#slide=id.g547716335e_0_2330)    
+
 **Steps**
 - [Architectural Overview](#architectural-overview)
 - [Create Minikube Cluster](#minikube-environment)
