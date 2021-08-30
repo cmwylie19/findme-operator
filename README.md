@@ -12,6 +12,7 @@ _During this lab, you will create a local cluster with minikube, install Istio, 
 - [Deploy Findme](#deploy-findme)
 - [Create a LoadBalancer for Istio-ingressgateway service](#create-a-loadbalancer)
 - [Interact with Applications](#interact-with-apps)
+- [Cleanup](#cleanup)   
 
 ## Architectural Overview
 Overview of the target endstate. We deploy the findme application and the httpbin application. The sole purpose of the httpbin application is for internal testing from within the cluster. The requests come in through the istio-ingress gateway and are routed accordingly via the configuration specified in the `default` virtual service.
@@ -74,7 +75,7 @@ EOF
 ```
 
 ## Create a loadbalancer
-Istio ingress gateway needs a dedicated IP address, you can expose it as type `NodePort` or `LoadBalancer`, with the default being `LoadBalancer`. In order to a serve the `svc/istio-ingressgateway` as LoadBalancer we need utlize `minikube tunnel` on order to expose the service as a `LoadBalancer`.
+Istio ingress gateway needs a dedicated IP address, you can expose it as type `NodePort` or `LoadBalancer`, with the default being `LoadBalancer`. In order to a serve the `svc/istio-ingressgateway` as LoadBalancer we need utlize `minikube tunnel` on order to expose the service as a `LoadBalancer`. Run this command in a new terminal.
 
 ```
 minikube tunnel
@@ -91,4 +92,31 @@ Open Findme app in the browser
 open `localhost` in your browser.
 ```
 chromium localhost
+```
+
+## Cleanup
+_This command will clean up the environment._
+```
+# Stop the terminal running `minikube tunnel`
+
+# disabled sidecar injection
+kubectl label namespace istio-system istio-injection=disabled --overwrite
+
+# Uninstall Istiod
+helm uninstall istiod helm-charts/istiod -n istio-system
+
+# Uninstall Istio-Ingress
+helm uninstall istio-ingress helm-charts/istio-ingress -n istio-system
+
+# Uninstall Istio base
+helm uninstall istio-base helm-charts/istio -n istio-system
+
+# Uninstall Findme Operator
+helm uninstall findme helm-charts/findme 
+
+# Delete istio-system namespace
+kubectl delete ns istio-system 
+
+# Delete the minikube cluster
+minikube delete
 ```
