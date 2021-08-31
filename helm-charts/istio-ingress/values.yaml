@@ -71,7 +71,7 @@ gateways:
       mountPath: /etc/istio/ingressgateway-ca-certs
 
     customService: false
-    externalTrafficPolicy: ""
+    externalTrafficPolicy: "Local"
 
     ingressPorts: []
     additionalContainers: []
@@ -146,10 +146,10 @@ global:
   defaultResources:
     requests:
       cpu: 10m
-    #   memory: 128Mi
-    # limits:
-    #   cpu: 100m
-    #   memory: 128Mi
+      memory: 128Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
 
   # Default node tolerations to be applied to all deployments so that all pods can be
   # scheduled to a particular nodes with matching taints. Each component can overwrite

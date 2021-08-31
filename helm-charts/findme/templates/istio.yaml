@@ -25,6 +25,14 @@ spec:
   http:
   - match:
     - uri:
+        exact: /ip
+    route:
+    - destination:
+        host: go-metrics
+        port:
+          number: 8080
+  - match:
+    - uri:
         exact: /get
     route:
     - destination:
