@@ -189,6 +189,11 @@ meshConfig:
   accessLogEncoding: JSON
   accessLogFormat: |
       {
+            # Request start time including milliseconds.
+            systemTime: '%START_TIME%'
+            # Bytes Received in the request body
+            bytesReceived: '%BYTES_RECEIVED%'
+            # Request Method
             httpMethod: '%REQ(:METHOD)%'
             # Protocol. Currently either HTTP/1.1 or HTTP/2.
             protocol: '%PROTOCOL%'
@@ -197,18 +202,29 @@ meshConfig:
             responseCode: '%RESPONSE_CODE%'
             # Total duration in milliseconds of the request from the start time to the last byte out
             clientDuration: '%DURATION%'
+            # HTTP Response code details
+            responseCodeDetails: '%RESPONSE_CODE_DETAILS%'
+            # Connection termination details
+            connectionTerminationDetails: '%CONNECTION_TERMINATION_DETAILS%'
             # Total duration in milliseconds of the request from the start time to the first byte read from the upstream host
             targetDuration: '%RESPONSE_DURATION%'
             # Value of the "x-envoy-original-path" header (falls back to "path" header if not present)
             path: '%REQ(X-ENVOY-ORIGINAL-PATH?:PATH)%'
             # Upstream cluster to which the upstream host belongs to
             upstreamName: '%UPSTREAM_CLUSTER%'
-            # Request start time including milliseconds.
-            systemTime: '%START_TIME%'
             # Unique tracking ID
             requestId: '%REQ(X-REQUEST-ID)%'
-            # Response flags; will contain RL if the request was rate-limited
+            # Response flags; will contain details about the response or connectiuon
             responseFlags: '%RESPONSE_FLAGS%'
+            # Name of the route
+            routeName: `%ROUTE_NAME%`
+            # Remote address of the requester
+            downstreamRemoteAddress: '%DOWNSTREAM_REMOTE_ADDRESS%'
+            # Upstream host url
+            upstreamHost: '%UPSTREAM_HOST%'
+            # URIs present on the SAN of the local certificate used to establish downstream TLS
+            downstreamLocalURISan: '%DOWNSTREAM_LOCAL_URI_SAN%'
+
       }
 
   enablePrometheusMerge: true
