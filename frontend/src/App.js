@@ -15,7 +15,7 @@ function App() {
   const [coords, setCoords] = useState([0.0, 0.0]);
 
   const { isLoaded } = useLoadScript({
-    googleMapsApiKey: "AIzaSyADVoZKBl8ARS2ekRQCLkULcrF6QyAqVuQ", // Add your API key
+    googleMapsApiKey: "", // Add your API key
   });
 
   var options = {
